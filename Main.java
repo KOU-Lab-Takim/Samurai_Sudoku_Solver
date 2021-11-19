@@ -10,7 +10,6 @@ public class Main {
     ArrayList<ArrayList<Integer>> squares = new ArrayList<>();
     Map<String, ArrayList<Integer>> availables = new HashMap<>();
     private Boolean isDone = false;
-    private Boolean flag = false;
 
     public int checkChar(char i) {
         if (i == '*') {
@@ -169,12 +168,12 @@ public class Main {
         }
         check3by3(x, y, val);
         squares.get(x).set(y, val);
-        if(flag){
+        /* if(flag){
             System.out.println(x + " " + y + " index " + val + " silindi");
             System.out.println(availables.get(createKey(1, 18)));
             printSquares();
             
-        }
+        } */
     }
 
     public void checkSquares(int x1, int x2, int y1, int y2) {
@@ -265,6 +264,9 @@ public class Main {
                 }
             }
         }
+
+
+
         return true;
     }
 
@@ -273,13 +275,50 @@ public class Main {
             for (int j = 0; j < 21; j++) {
                 ArrayList<Integer> av = availables.get(createKey(i, j));
                 if(squares.get(i).get(j) == 0 && av.size() == 0){
-                    System.out.println("wrong decision");
-                    System.out.println(i + " " + j + av);
+                    /* System.out.println("wrong decision");
+                    System.out.println(i + " " + j + av); */
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    public ArrayList<Integer> findInterval(int i, int j){
+        ArrayList<Integer> a = new ArrayList<>();
+        if(i >= 6 && i <= 14 && j >= 6 && j <= 14){
+            a.add(6);a.add(14);a.add(6);a.add(14);
+            return a;
+        }
+        if(i >= 0 && i <= 8 && j >= 0 && j <= 8){
+            a.add(0);a.add(8);a.add(0);a.add(8);
+            return a;
+        }
+        if(i >= 0 && i <= 8 && j >= 12 && j <= 20){
+            a.add(0);a.add(8);a.add(12);a.add(20);
+            return a;
+        }
+        if(i >= 12 && i <= 20 && j >= 0 && j <= 8){
+            a.add(12);a.add(20);a.add(0);a.add(8);
+            return a;
+        }
+        a.add(12);a.add(20);a.add(12);a.add(20);
+        return a;
+    }
+
+    public void copySquares(ArrayList<ArrayList<Integer>> square1, ArrayList<ArrayList<Integer>> square2){
+        /* System.out.println(square2.size()); */
+        for (int i = 0; i < square2.size(); i++) {
+            ArrayList<Integer> temp = new ArrayList<>();
+            for (int j = 0; j < square2.size(); j++) {
+                temp.add(square2.get(i).get(j));
+            }
+            if(square1.size() == 21){
+                square1.set(i, new ArrayList<>(temp));
+            }
+            else
+                square1.add(temp);
+        }
     }
 
     public Boolean solveThread(){
@@ -293,8 +332,8 @@ public class Main {
             isDone = false;
             findOnes(0, 8, 0, 8);
             findOnes(12, 20, 0, 8);
-            if(isWrongDecision())
-                System.out.println("hatali");
+            /* if(isWrongDecision())
+                System.out.println("hatali"); */
             findOnes(0, 8, 12, 20);
             findOnes(6, 14, 6, 14);
             findOnes(12, 20, 12, 20);
@@ -305,27 +344,26 @@ public class Main {
             findSingle(6, 14, 6, 14);
             findSingle(12, 20, 12, 20);
           
-            System.out.println("isDone  "  + isDone);
+            /* System.out.println("isDone  "  + isDone); */
             if(isDone == false){
                 for (int i = 0; i < 21; i++) {
                     for (int j = 0; j < 21; j++) {
                         if(squares.get(i).get(j) == 0){
-                            System.out.println("girdi");
+                            /* System.out.println("girdi"); */
                             ArrayList<Integer> av = availables.get(createKey(i, j));
                             for (int k = 0; k < av.size(); k++) {
                                 Main m2 = new Main();
-                                m2.squares = new ArrayList<>(squares);
+                                copySquares(m2.squares, squares);
                                 for (Map.Entry<String,ArrayList<Integer>> entry : availables.entrySet())
                                     m2.availables.put(entry.getKey(), new ArrayList<Integer>(entry.getValue()));
-                                m2.squares.get(i).set(j, av.get(k));
+                                ArrayList<Integer> a = findInterval(i, j);
+                                m2.checkSquare(i, j, a.get(0), a.get(1), a.get(2), a.get(3), av.get(k));
                                 if(m2.solveThread()){
-                                    squares = new ArrayList<>(m2.squares);
+                                    copySquares(squares, m2.squares);
                                     for (Map.Entry<String,ArrayList<Integer>> entry : m2.availables.entrySet())
                                         availables.put(entry.getKey(), new ArrayList<Integer>(entry.getValue())); 
-                                    System.out.println("cozdum");
-                                }
-                                else{
-                                    m2.printSquares();
+                                    /* System.out.println("cozdum"); */
+                                    return true;
                                 }
                             }
                         }
@@ -339,17 +377,14 @@ public class Main {
     public static void main(String[] args) {
         Main m = new Main();
         m.readFile();
-        // m.printSquares();
         m.initAvailables();
-        //m.checkSquare(14, 14, 6, 14, 6, 14, 1);
-        //m.printAvailables();
         
         m.checkSquares(0, 8, 0, 8);
         m.checkSquares(12, 20, 0, 8);
         m.checkSquares(0, 8, 12, 20);
         m.checkSquares(6, 14, 6, 14);
         m.checkSquares(12, 20, 12, 20);
-        m.flag = true;
+        
         m.solveThread();
 
         m.printSquares();
