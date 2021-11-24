@@ -1,62 +1,47 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
-class MyThread implements Runnable{
+import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
+
+class MyThread implements Runnable {
 
     Main m;
     ArrayList<Integer> intervals = new ArrayList<>();
     String threadName;
+    Boolean inverse;
+
     @Override
     public void run() {
-        m.calculateWritables(intervals.get(0), intervals.get(1), intervals.get(2), intervals.get(3), threadName);
+        m.calculateWritables(intervals.get(0), intervals.get(1), intervals.get(2), intervals.get(3), threadName, inverse);
     }
 
-    MyThread( Main m, int x1, int x2, int y1, int y2 , String threadName){
-        this.m = m;intervals.add(x1);intervals.add(x2);intervals.add(y1);intervals.add(y2);this.threadName = threadName;
+    MyThread(Main m, int x1, int x2, int y1, int y2, String threadName, Boolean inverse) {
+        this.m = m;
+        intervals.add(x1);
+        intervals.add(x2);
+        intervals.add(y1);
+        intervals.add(y2);
+        this.threadName = threadName;this.inverse = inverse;
     }
 
-}
-
-class MyThread2 implements Runnable{
-    Main m;
-    ArrayList<Integer> intervals = new ArrayList<>();
-    String threadName;
-    @Override
-    public void run() {
-        m.findOnes(intervals.get(0), intervals.get(1), intervals.get(2), intervals.get(3), threadName);
-    }
-
-    MyThread2( Main m, int x1, int x2, int y1, int y2 , String threadName){
-        this.m = m;intervals.add(x1);intervals.add(x2);intervals.add(y1);intervals.add(y2);this.threadName = threadName;
-    }
-}
-
-class MyThread3 implements Runnable{
-    Main m;
-    ArrayList<Integer> intervals = new ArrayList<>();
-    String threadName;
-    @Override
-    public void run() {
-        m.findSingle(intervals.get(0), intervals.get(1), intervals.get(2), intervals.get(3), threadName);
-    }
-
-    MyThread3( Main m, int x1, int x2, int y1, int y2 , String threadName){
-        this.m = m;intervals.add(x1);intervals.add(x2);intervals.add(y1);intervals.add(y2);this.threadName = threadName;
-    }
 }
 
 public class Main {
 
     ArrayList<ArrayList<Integer>> squares = new ArrayList<>();
-    Map<String, ArrayList<Integer>> availables = new HashMap<>();
+    HashMap<String, ArrayList<Integer>> availables = new HashMap<>();
     ArrayList<String> steps = new ArrayList<>();
     public Boolean isDone = false;
-    private int hesaplaniyorNum = 0;
-    private static int kacinci = 0;
+    private long startTime;
+    static ArrayList<Long> times = new ArrayList<>();
 
     public int checkChar(char i) {
         if (i == '*') {
@@ -130,10 +115,10 @@ public class Main {
     public void printSquares() {
         for (int i = 0; i < squares.size(); i++) {
             for (int j = 0; j < squares.size(); j++) {
-                if(squares.get(i).get(j) != -1)
+                if (squares.get(i).get(j) != -1)
                     System.out.print(squares.get(i).get(j));
                 else
-                    System.out.print("*");    
+                    System.out.print("*");
             }
             System.out.println("");
         }
@@ -221,15 +206,16 @@ public class Main {
         }
         check3by3(x, y, val);
         squares.get(x).set(y, val);
-        if(val_2 != -1){
+        if (val_2 != -1) {
+            times.add(System.currentTimeMillis() - startTime);
             steps.add(x + " satır " + y + " sutununa " + val + " degeri eklendi " + "/ thread : " + threadName);
         }
-        /* if(flag){
-            System.out.println(x + " " + y + " index " + val + " silindi");
-            System.out.println(availables.get(createKey(1, 18)));
-            printSquares();
-            
-        } */
+        /*
+         * if(flag){ System.out.println(x + " " + y + " index " + val + " silindi");
+         * System.out.println(availables.get(createKey(1, 18))); printSquares();
+         * 
+         * }
+         */
     }
 
     public void checkSquares(int x1, int x2, int y1, int y2) {
@@ -242,18 +228,32 @@ public class Main {
         }
     }
 
-    public void findOnes(int x1, int x2, int y1, int y2, String threadName) {
-        
-        for (int i = x1; i <= x2; i++) {
-            for (int j = y1; j <= y2; j++) {
-                if (squares.get(i).get(j) == 0 && availables.get(createKey(i, j)).size() == 1) {
-                    isDone = true;
-                    //squares.get(i).set(j, availables.get(createKey(i, j)).get(0));
-                    checkSquare(i, j, x1, x2, y1, y2, availables.get(createKey(i, j)).get(0), threadName);
-                    //deleteFrom(availables.get(createKey(i, j)).get(0), i, j);
+    public void findOnes(int x1, int x2, int y1, int y2, String threadName, Boolean inverse) {
+        if(inverse){
+            for (int i = x2; i >= x1; i--) {
+                for (int j = y2; j >= y1; j--) {
+                    if (squares.get(i).get(j) == 0 && availables.get(createKey(i, j)).size() == 1) {
+                        isDone = true;
+                        // squares.get(i).set(j, availables.get(createKey(i, j)).get(0));
+                        checkSquare(i, j, x1, x2, y1, y2, availables.get(createKey(i, j)).get(0), threadName);
+                        // deleteFrom(availables.get(createKey(i, j)).get(0), i, j);
+                    }
                 }
             }
         }
+        else{
+            for (int i = x1; i <= x2; i++) {
+                for (int j = y1; j <= y2; j++) {
+                    if (squares.get(i).get(j) == 0 && availables.get(createKey(i, j)).size() == 1) {
+                        isDone = true;
+                        // squares.get(i).set(j, availables.get(createKey(i, j)).get(0));
+                        checkSquare(i, j, x1, x2, y1, y2, availables.get(createKey(i, j)).get(0), threadName);
+                        // deleteFrom(availables.get(createKey(i, j)).get(0), i, j);
+                    }
+                }
+            }
+        }
+        
     }
 
     public void searchSingle(int x, int y, int x1, int x2, int y1, int y2, String threadName) {
@@ -295,26 +295,36 @@ public class Main {
                     }
                 }
 
-                //squares.get(x).set(y, i);
+                // squares.get(x).set(y, i);
                 checkSquare(index_i, index_j, x1, x2, y1, y2, i, threadName);
-                //deleteFrom(i, index_i, index_j);
+                // deleteFrom(i, index_i, index_j);
             }
         }
     }
 
-    public void findSingle(int x1, int x2, int y1, int y2, String threadName) {
-        for (int i = x1; i < x2; i += 3) {
-            for (int j = y1; j < y2; j += 3) {
-                if(squares.get(i).get(j) != -1)
-                    searchSingle(i, j, x1, x2, y1, y2, threadName);
+    public void findSingle(int x1, int x2, int y1, int y2, String threadName, Boolean inverse) {
+        if(inverse){
+            for (int i = x2 - 2; i >= x1; i -= 3) {
+                for (int j = y2 - 2; j >= y2; j -= 3) {
+                    if (squares.get(i).get(j) != -1)
+                        searchSingle(i, j, x1, x2, y1, y2, threadName);
+                }
+            }
+        }
+        else{
+            for (int i = x1; i < x2; i += 3) {
+                for (int j = y1; j < y2; j += 3) {
+                    if (squares.get(i).get(j) != -1)
+                        searchSingle(i, j, x1, x2, y1, y2, threadName);
+                }
             }
         }
     }
 
-    public Boolean isSudokuSolved(){
+    public Boolean isSudokuSolved() {
         for (int i = 0; i < 21; i++) {
             for (int j = 0; j < 21; j++) {
-                if(squares.get(i).get(j) == 0){
+                if (squares.get(i).get(j) == 0) {
                     return false;
                 }
             }
@@ -323,13 +333,14 @@ public class Main {
         return true;
     }
 
-    public Boolean isWrongDecision(){
+    public Boolean isWrongDecision() {
         for (int i = 0; i < 21; i++) {
             for (int j = 0; j < 21; j++) {
                 ArrayList<Integer> av = availables.get(createKey(i, j));
-                if(squares.get(i).get(j) == 0 && av.size() == 0){
-                    /* System.out.println("wrong decision");
-                    System.out.println(i + " " + j + av); */
+                if (squares.get(i).get(j) == 0 && av.size() == 0) {
+                    /*
+                     * System.out.println("wrong decision"); System.out.println(i + " " + j + av);
+                     */
                     return true;
                 }
             }
@@ -337,112 +348,126 @@ public class Main {
         return false;
     }
 
-    public ArrayList<Integer> findInterval(int i, int j){
+    public ArrayList<Integer> findInterval(int i, int j) {
         ArrayList<Integer> a = new ArrayList<>();
 
-        if(i >= 6 && i <= 14 && j >= 6 && j <= 14){
-            a.add(6);a.add(14);a.add(6);a.add(14);
+        if (i >= 6 && i <= 14 && j >= 6 && j <= 14) {
+            a.add(6);
+            a.add(14);
+            a.add(6);
+            a.add(14);
             return a;
         }
-        if(i >= 0 && i <= 8 && j >= 0 && j <= 8){
-            a.add(0);a.add(8);a.add(0);a.add(8);
+        if (i >= 0 && i <= 8 && j >= 0 && j <= 8) {
+            a.add(0);
+            a.add(8);
+            a.add(0);
+            a.add(8);
             return a;
         }
-        if(i >= 0 && i <= 8 && j >= 12 && j <= 20){
-            a.add(0);a.add(8);a.add(12);a.add(20);
+        if (i >= 0 && i <= 8 && j >= 12 && j <= 20) {
+            a.add(0);
+            a.add(8);
+            a.add(12);
+            a.add(20);
             return a;
         }
-        if(i >= 12 && i <= 20 && j >= 0 && j <= 8){
-            a.add(12);a.add(20);a.add(0);a.add(8);
+        if (i >= 12 && i <= 20 && j >= 0 && j <= 8) {
+            a.add(12);
+            a.add(20);
+            a.add(0);
+            a.add(8);
             return a;
         }
-        a.add(12);a.add(20);a.add(12);a.add(20);
+        a.add(12);
+        a.add(20);
+        a.add(12);
+        a.add(20);
         return a;
     }
 
-    public void copySquares(ArrayList<ArrayList<Integer>> square1, ArrayList<ArrayList<Integer>> square2){
+    public void copySquares(ArrayList<ArrayList<Integer>> square1, ArrayList<ArrayList<Integer>> square2) {
         /* System.out.println(square2.size()); */
         for (int i = 0; i < square2.size(); i++) {
             ArrayList<Integer> temp = new ArrayList<>();
             for (int j = 0; j < square2.size(); j++) {
                 temp.add(square2.get(i).get(j));
             }
-            if(square1.size() == 21){
+            if (square1.size() == 21) {
                 square1.set(i, new ArrayList<>(temp));
-            }
-            else
+            } else
                 square1.add(temp);
         }
     }
 
-    public void calculateWritables(int x1, int x2, int y1, int y2, String threadName){
-        findOnes(x1, x2, y1, y2, threadName);
-        findSingle(x1, x2, y1, y2, threadName);
+    public void calculateWritables(int x1, int x2, int y1, int y2, String threadName, Boolean inverse) {
+        findOnes(x1, x2, y1, y2, threadName, inverse);
+        findSingle(x1, x2, y1, y2, threadName, inverse);
     }
 
-    public Boolean checkSudoku(){
+    public Boolean checkSudoku() {
         for (int i = 0; i < 21; i++) {
             for (int j = 0; j < 21; j++) {
-                if(squares.get(i).get(j) != -1){
+                if (squares.get(i).get(j) != -1) {
                     ArrayList<Integer> intervals = findInterval(i, j);
                     // check x coordinates
                     for (int k = intervals.get(0); k <= intervals.get(1); k++) {
-                        if(k == i){
+                        if (k == i) {
                             continue;
                         }
-                        if(squares.get(i).get(j) == squares.get(k).get(j)){
+                        if (squares.get(i).get(j) == squares.get(k).get(j)) {
                             return false;
                         }
                     }
 
                     // check y coordinates
                     for (int k = intervals.get(2); k <= intervals.get(3); k++) {
-                        if(k == j){
+                        if (k == j) {
                             continue;
                         }
-                        if(squares.get(i).get(j) == squares.get(i).get(k)){
+                        if (squares.get(i).get(j) == squares.get(i).get(k)) {
                             return false;
                         }
                     }
-                    
+
                     String[] control = checkException(i, j);
                     if (!(control[0].equals("none"))) {
                         if (control[0] == "sol") {
                             for (int i2 = 0; i2 <= 5; i2++) {
-                                if(squares.get(i).get(j) == squares.get(i2).get(j)){
+                                if (squares.get(i).get(j) == squares.get(i2).get(j)) {
                                     return false;
                                 }
                             }
                         }
                         if (control[0] == "sag") {
                             for (int i2 = 15; i2 <= 20; i2++) {
-                                if(squares.get(i).get(j) == squares.get(i2).get(j)){
+                                if (squares.get(i).get(j) == squares.get(i2).get(j)) {
                                     return false;
                                 }
                             }
                         }
                         if (control[1] == "ust") {
                             for (int i2 = 0; i2 <= 5; i2++) {
-                                if(squares.get(i).get(j) == squares.get(i).get(i2)){
+                                if (squares.get(i).get(j) == squares.get(i).get(i2)) {
                                     return false;
                                 }
                             }
                         }
                         if (control[1] == "alt") {
                             for (int i2 = 15; i2 <= 20; i2++) {
-                                if(squares.get(i).get(j) == squares.get(i).get(i2)){
+                                if (squares.get(i).get(j) == squares.get(i).get(i2)) {
                                     return false;
                                 }
                             }
                         }
                     }
 
-                    // check 3 x 3 
+                    // check 3 x 3
                     int x = i - (i % 3);
                     int y = j - (j % 3);
-                    for (int k = x; k < x+3; k++) {
-                        for (int k2 = y; k2 < y+3; k2++) {
-                            if( !(k == i && k2 == j) && squares.get(i).get(j) == squares.get(k).get(k2)){
+                    for (int k = x; k < x + 3; k++) {
+                        for (int k2 = y; k2 < y + 3; k2++) {
+                            if (!(k == i && k2 == j) && squares.get(i).get(j) == squares.get(k).get(k2)) {
                                 return false;
                             }
                         }
@@ -454,104 +479,98 @@ public class Main {
         return true;
     }
 
-    public Boolean solveThread(String SOLVE_MODE) throws InterruptedException{        
-        
-        while(true){
-            printHesaplaniyor();
-            //printSquares();
-            //System.out.println("\n\n\n\n");
+    public Boolean solveThread(String SOLVE_MODE) throws InterruptedException {
+        while (true) {
+            // printSquares();
+            // System.out.println("\n\n\n\n");
 
-            if(isWrongDecision()){
+            if (isWrongDecision()) {
                 return false;
 
             }
-            if(isSudokuSolved()){
-                System.out.println("kontrol" + kacinci);
-                kacinci++;
-                if(checkSudoku()){
+            if (isSudokuSolved()) {
+                if (checkSudoku()) {
                     return true;
-                }
-                else{
-                    System.out.println("SUDOKU FALSE");
                 }
                 return false;
             }
 
             isDone = false;
-            if(SOLVE_MODE == "1 Thread"){
-                findOnes(6, 14, 6, 14, " ");
-                findSingle(6, 14, 6, 14, " ");
-                findOnes(0, 8, 0, 8, " ");
-                findOnes(12, 20, 0, 8, " ");
-                findOnes(0, 8, 12, 20, " ");
-                findOnes(12, 20, 12, 20, " ");
-                findSingle(0, 8, 0, 8, " ");
-                findSingle(12, 20, 0, 8, " ");
-                findSingle(0, 8, 12, 20, " ");
-                findSingle(12, 20, 12, 20, " ");
+            if (SOLVE_MODE == "1 Thread") {
+                findOnes(6, 14, 6, 14, " ", false);
+                findSingle(6, 14, 6, 14, " ", false);
+                findOnes(0, 8, 0, 8, " ", false);
+                findOnes(12, 20, 0, 8, " ", false);
+                findOnes(0, 8, 12, 20, " ", false);
+                findOnes(12, 20, 12, 20, " ", false);
+                findSingle(0, 8, 0, 8, " ", false);
+                findSingle(12, 20, 0, 8, " ", false);
+                findSingle(0, 8, 12, 20, " ", false);
+                findSingle(12, 20, 12, 20, " ", false);
             }
 
-            else if(SOLVE_MODE == "5 Thread"){
+            else if (SOLVE_MODE == "5 Thread") {
                 // 5 Thread
-                
-                MyThread t4 = new MyThread(this, 6, 14, 6, 14, "thread 4");
+
+                MyThread t4 = new MyThread(this, 6, 14, 6, 14, "thread 4", false);
                 t4.run();
-                MyThread t1 = new MyThread(this, 0, 8, 0, 8, "thread 1");
+                MyThread t1 = new MyThread(this, 0, 8, 0, 8, "thread 1", false);
                 t1.run();
-                MyThread t2 = new MyThread(this, 12, 20, 0, 8, "thread 2");
+                MyThread t2 = new MyThread(this, 12, 20, 0, 8, "thread 2", false);
                 t2.run();
-                MyThread t3 = new MyThread(this, 0, 8, 12, 20, "thread 3");
+                MyThread t3 = new MyThread(this, 0, 8, 12, 20, "thread 3", false);
                 t3.run();
-                MyThread t5 = new MyThread(this, 12, 20, 12, 20, "thread 5");
+                MyThread t5 = new MyThread(this, 12, 20, 12, 20, "thread 5", false);
                 t5.run();
-                
-            }
-            else{
+
+            } else {
                 // 10 Thread
-                MyThread2 t4 = new MyThread2(this, 6, 14, 6, 14, "thread 4");
+                MyThread t4 = new MyThread(this, 6, 14, 6, 14, "thread 4", false);
                 t4.run();
-                MyThread3 t9 = new MyThread3(this, 6, 14, 6, 14, "thread 9");
-                t9.run();
-                MyThread2 t1 = new MyThread2(this, 0, 8, 0, 8, "thread 1");
+                MyThread t1 = new MyThread(this, 0, 8, 0, 8, "thread 1", false);
                 t1.run();
-                MyThread2 t2 = new MyThread2(this, 12, 20, 0, 8, "thread 2");
+                MyThread t2 = new MyThread(this, 12, 20, 0, 8, "thread 2", false);
                 t2.run();
-                MyThread2 t3 = new MyThread2(this, 0, 8, 12, 20, "thread 3");
+                MyThread t3 = new MyThread(this, 0, 8, 12, 20, "thread 3", false);
                 t3.run();
-                MyThread2 t5 = new MyThread2(this, 12, 20, 12, 20, "thread 5");
+                MyThread t5 = new MyThread(this, 12, 20, 12, 20, "thread 5", false);
                 t5.run();
-                MyThread3 t6 = new MyThread3(this, 0, 8, 0, 8, "thread 6");
+                MyThread t6 = new MyThread(this, 14, 6, 14, 6, "thread 6", true);
                 t6.run();
-                MyThread3 t7 = new MyThread3(this, 12, 20, 0, 8, "thread 7");
+                MyThread t7 = new MyThread(this, 8, 0, 8, 0, "thread 7", true);
                 t7.run();
-                MyThread3 t8 = new MyThread3(this, 0, 8, 12, 20, "thread 8");
+                MyThread t8 = new MyThread(this, 20, 12, 8, 0, "thread 8", true);
                 t8.run();
-                MyThread3 t10 = new MyThread3(this, 12, 20, 12, 20, "thread 10");
+                MyThread t9 = new MyThread(this, 8, 0, 20, 12, "thread 9", true);
+                t9.run();
+                MyThread t10 = new MyThread(this, 20, 12, 20, 12, "thread 10", true);
                 t10.run();
-                
+
             }
 
-
-            if(isDone == false){
+            if (isDone == false) {
                 for (int i = 0; i < 21; i++) {
                     for (int j = 0; j < 21; j++) {
-                        if(squares.get(i).get(j) == 0){
+                        if (squares.get(i).get(j) == 0) {
                             /* System.out.println("girdi"); */
                             ArrayList<Integer> av = availables.get(createKey(i, j));
                             for (int k = 0; k < av.size(); k++) {
                                 Main m2 = new Main();
+                                m2.startTime = startTime;
                                 copySquares(m2.squares, squares);
-                                for (Map.Entry<String,ArrayList<Integer>> entry : availables.entrySet())
-                                    m2.availables.put(entry.getKey(), new ArrayList<Integer>(entry.getValue()));
+                                for (Map.Entry<String, ArrayList<Integer>> entry : availables.entrySet())
+                                    m2.availables.put(new String(entry.getKey()),
+                                            new ArrayList<Integer>(entry.getValue()));
                                 m2.steps = new ArrayList<>(steps);
                                 ArrayList<Integer> a = findInterval(i, j);
                                 m2.checkSquare(i, j, a.get(0), a.get(1), a.get(2), a.get(3), av.get(k), "Thread 1");
-                                if(m2.solveThread(SOLVE_MODE)){
+                                if (m2.solveThread(SOLVE_MODE)) {
                                     copySquares(squares, m2.squares);
-                                    for (Map.Entry<String,ArrayList<Integer>> entry : m2.availables.entrySet())
-                                        availables.put(entry.getKey(), new ArrayList<Integer>(entry.getValue())); 
+                                    for (Map.Entry<String, ArrayList<Integer>> entry : m2.availables.entrySet())
+                                        availables.put(new String(entry.getKey()),
+                                                new ArrayList<Integer>(entry.getValue()));
                                     steps = new ArrayList<>(m2.steps);
-                                    /* System.out.println("cozdum");  */
+                                    /* System.out.println("cozdum"); */
                                     return true;
                                 }
                             }
@@ -560,51 +579,112 @@ public class Main {
                     }
                 }
             }
-        
+
         }
     }
 
-    public void printSteps(){
+    public void printSteps() {
         for (int i = 0; i < steps.size(); i++) {
             System.out.println(steps.get(i));
         }
     }
 
-    public void printHesaplaniyor(){
-        System.out.print("\033[H\033[2J");
-        System.out.print("Hesaplaniyor");
-        for (int i = 0; i <= hesaplaniyorNum; i++) {
-            System.out.print(".");
-        }
-        System.out.println("\n");
-        hesaplaniyorNum = (hesaplaniyorNum + 1) % 20;
+
+    public void writeStepsToFile(String filename){
+        try {
+            FileWriter myWriter = new FileWriter(filename);
+            for (int i = 0; i < steps.size(); i++) {
+                myWriter.write(steps.get(i) + "\n");
+            }
+            myWriter.close();
+          } catch (IOException e) {
+            System.out.println("An error occurred while writing steps to file");
+            e.printStackTrace();
+          }
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        String SOLVE_MODE = "1 Thread";
-        
+    public static void calculateTimeIntervals(ArrayList<Long> times_,HashMap<String, Integer> timeIntervals, int interval){
+        for (int i = 0; i < times_.size(); i++) {
+            long a = times_.get(i) - (times_.get(i) % interval);
+            String key = String.valueOf(a) + " - " + String.valueOf(a + interval); 
+            //System.out.println(key + " " + a);
+            if(timeIntervals.containsKey(key)){
+                timeIntervals.put(key, timeIntervals.get(key) + 1);
+            }
+            else{
+                timeIntervals.put(key, 1);
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException, InvocationTargetException {
+        // 5 Thread
         Main m = new Main();
-        m.readFile("samurai4.txt");
+        String filename = "samurai.txt";
+        m.readFile(filename);
         m.initAvailables();
         m.checkSquares(0, 8, 0, 8);
         m.checkSquares(12, 20, 0, 8);
         m.checkSquares(0, 8, 12, 20);
         m.checkSquares(6, 14, 6, 14);
         m.checkSquares(12, 20, 12, 20);
-        
-        long start = System.currentTimeMillis();
 
-        m.solveThread(SOLVE_MODE);
+        m.startTime = System.currentTimeMillis();
+
+        m.solveThread("5 Thread");
 
         long end = System.currentTimeMillis();
-        long elapsedTime = end - start; 
+        long elapsedTime = end - m.startTime;
 
-        
-        m.printSteps();
-        System.out.println("sayi "  + m.steps.size());
-        System.out.println(m.checkSudoku());
-        System.out.println("elapsed time : " + elapsedTime + " ms");
+        HashMap<String, Integer> timeIntervals = new HashMap<>();      
+        m.writeStepsToFile("adimlar_5thread.txt");
+
+        System.out.println("elapsed time (5 Thread) : " + elapsedTime + " ms");
         m.printSquares();
-        
+        ArrayList<Long> times_ = new ArrayList<>();
+        for (int i = 0; i < Main.times.size(); i++) {   
+            times_.add(Main.times.get(i));
+        }
+        Main.times = new ArrayList<>();
+        System.out.println("\n\n\n\n");
+        // 10 Thread
+        Main m2 = new Main();
+        m2.readFile(filename);
+        m2.initAvailables();
+        m2.checkSquares(0, 8, 0, 8);
+        m2.checkSquares(12, 20, 0, 8);
+        m2.checkSquares(0, 8, 12, 20);
+        m2.checkSquares(6, 14, 6, 14);
+        m2.checkSquares(12, 20, 12, 20);
+
+        m2.startTime = System.currentTimeMillis();
+
+        m2.solveThread("10 Thread");
+        long end2 = System.currentTimeMillis();
+        long elapsedTime2 = end2 - m2.startTime;
+
+        HashMap<String, Integer> timeIntervals10_thread = new HashMap<>();    
+        if(elapsedTime > elapsedTime2){
+            Main.calculateTimeIntervals(times_, timeIntervals, (int)elapsedTime / 10);
+            Main.calculateTimeIntervals(times, timeIntervals10_thread, (int)elapsedTime / 10);
+        }
+        else{
+            Main.calculateTimeIntervals(times_, timeIntervals, (int)elapsedTime2 / 10);
+            Main.calculateTimeIntervals(times, timeIntervals10_thread, (int)elapsedTime2 / 10);
+        }
+        //m2.calculateTimeIntervals(timeIntervals10_thread, elapsedTime2 / 5);      
+        m2.writeStepsToFile("adimlar_10thread.txt");
+
+        System.out.println("elapsed time (10 Thread) : " + elapsedTime2 + " ms");
+        m2.printSquares();
+
+        chart mychart = new chart("Time - Process Number Chart", timeIntervals, timeIntervals10_thread);
+
+        SwingUtilities.invokeAndWait(()->{
+            mychart.setSize(800, 400);
+            mychart.setLocationRelativeTo(null);
+            mychart.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+            mychart.setVisible(true);
+        });
     }
 }
