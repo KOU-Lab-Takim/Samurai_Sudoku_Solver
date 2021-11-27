@@ -222,7 +222,11 @@ public class Main {
         for (int x = x1; x <= x2; x++) {
             for (int y = y1; y <= y2; y++) {
                 if (squares.get(x).get(y) != 0 && squares.get(x).get(y) != -1) {
-                    checkSquare(x, y, x1, x2, y1, y2, -1, "");
+                    // thread lock
+                    synchronized(this){
+                        checkSquare(x, y, x1, x2, y1, y2, -1, "");
+                    }
+                    
                 }
             }
         }
@@ -233,10 +237,14 @@ public class Main {
             for (int i = x2; i >= x1; i--) {
                 for (int j = y2; j >= y1; j--) {
                     if (squares.get(i).get(j) == 0 && availables.get(createKey(i, j)).size() == 1) {
-                        isDone = true;
-                        // squares.get(i).set(j, availables.get(createKey(i, j)).get(0));
-                        checkSquare(i, j, x1, x2, y1, y2, availables.get(createKey(i, j)).get(0), threadName);
-                        // deleteFrom(availables.get(createKey(i, j)).get(0), i, j);
+                        // thread lock
+                        synchronized(this){
+                            isDone = true;
+                            // squares.get(i).set(j, availables.get(createKey(i, j)).get(0));
+                            checkSquare(i, j, x1, x2, y1, y2, availables.get(createKey(i, j)).get(0), threadName);
+                            // deleteFrom(availables.get(createKey(i, j)).get(0), i, j);
+                        }
+                        
                     }
                 }
             }
@@ -245,10 +253,14 @@ public class Main {
             for (int i = x1; i <= x2; i++) {
                 for (int j = y1; j <= y2; j++) {
                     if (squares.get(i).get(j) == 0 && availables.get(createKey(i, j)).size() == 1) {
-                        isDone = true;
-                        // squares.get(i).set(j, availables.get(createKey(i, j)).get(0));
-                        checkSquare(i, j, x1, x2, y1, y2, availables.get(createKey(i, j)).get(0), threadName);
-                        // deleteFrom(availables.get(createKey(i, j)).get(0), i, j);
+                        // thread lock
+                        synchronized(this){
+                            isDone = true;
+                            // squares.get(i).set(j, availables.get(createKey(i, j)).get(0));
+                            checkSquare(i, j, x1, x2, y1, y2, availables.get(createKey(i, j)).get(0), threadName);
+                            // deleteFrom(availables.get(createKey(i, j)).get(0), i, j);
+                        }
+                        
                     }
                 }
             }
